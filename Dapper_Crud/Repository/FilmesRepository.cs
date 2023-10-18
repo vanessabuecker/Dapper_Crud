@@ -11,19 +11,19 @@ namespace Dapper_Crud.Repository
         private readonly IConfiguration _configuration;
         private readonly string connectionString;
 
-        public FilmesRepository(IConfiguration configuration) 
+        public FilmesRepository(IConfiguration configuration)
         {
-           _configuration = configuration;
+            _configuration = configuration;
             connectionString = _configuration.GetConnectionString("ServerConnection");
         }
         public async Task<Filmes> BuscaFilmeAsync(int id)
         {
             string sql =
                         @"SELECT
-                           [FilmeID]
-                          ,[Nome]
-                          ,[DataLancamento]
-                          ,[Nota]
+                            [FilmeID]
+                           ,[Nome]
+                           ,[DataLancamento]
+                           ,[Nota]
                          FROM [DataMovies].[dbo].Filme
                          where FilmeID = @FilmeID";
 
@@ -31,18 +31,17 @@ namespace Dapper_Crud.Repository
             return await connection.QueryFirstOrDefaultAsync<Filmes>(sql, new { FilmeID = id });
         }
 
-            public async Task<IEnumerable<Filmes>> BuscaFilmesAsync()
+        public async Task<IEnumerable<Filmes>> BuscaFilmesAsync()
         {
             string sql = @"SELECT
-                             FilmeID
-                             Nome,
-                             DataLancamento,
-                             Nota
-                         FROM dbo.Filme 
-                         JOIN dbo.Usuario ON Filme.FilmeID = Usuario.UsuarioID;";
+                             [FilmeID]
+                            ,[Nome]
+                            ,[DataLancamento]
+                            ,[Nota]
+                         FROM [DataMovies].[dbo].Filme";
 
             using var connection = new SqlConnection(connectionString);
-                return await connection.QueryAsync<Filmes>(sql);
+            return await connection.QueryAsync<Filmes>(sql);
         }
 
         public async Task<bool> AdicionarFilmesRequest(FilmesRequest request)
@@ -51,12 +50,19 @@ namespace Dapper_Crud.Repository
                                 Values (@Nome, @DataLancamento, @Nota)";
 
             using var connection = new SqlConnection(connectionString);
-            return await connection.ExecuteAsync(sql, new { Nome = request.Name, DataLancamento = request.DataLancamento, Nota = request.Nota }) > 0;
+            return await connection.ExecuteAsync(sql, new { request.FilmeID, request.Nome, request.DataLancamento, request.Nota }) > 0;
         }
 
-        public Task<bool> AtualizarAsync(FilmesRequest request, int id)
+        public async Task<bool> AtualizarAsync(FilmesRequest request, int id)
         {
-            throw new NotImplementedException();
+            string sql = @"UPDATE 
+                            Filme SET Nome = @Nome,
+                                  DataLancamento = @DataLancamento,
+                                  Nota = @Nota
+                                  where FilmeID = @FilmeID;";
+
+            using var connection = new SqlConnection(connectionString);
+            return await connection.ExecuteAsync(sql, new { request.FilmeID, request.Nome, request.DataLancamento, request.Nota }) > 0;
         }
 
         public Task<bool> DeletarAsync(int id)
